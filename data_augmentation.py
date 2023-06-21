@@ -52,8 +52,18 @@ def augment_rotate(img, max_angle=10, p=0.5):
     img_rotated = img
     if rdn < p:
         angle = np.random.uniform(low=-max_angle, high=max_angle)
-        img_rotated = ndimage.rotate(img, angle, reshape=False, mode='mirror')
+        img_rotated = ndimage.rotate(img, angle, reshape=False, mode='reflect')
     return img_rotated
+
+def augment_shift(img, shift_height_ratio=0.1, shift_width_ratio=0.1, p=0.5):
+    rdn = np.random.rand()
+    img_shifted = img
+    if rdn < p:
+        _, im_height, im_width = img.shape
+        shift_height = np.random.uniform(-shift_height_ratio, shift_height_ratio)*im_height
+        shift_width  = np.random.uniform(-shift_width_ratio, shift_width_ratio)*im_width
+        img_shifted = ndimage.shift(img, shift=(shift_height, shift_width, 0), mode='reflect')
+    return img_shifted
 
 
 class data_augmentation:
@@ -63,7 +73,9 @@ class data_augmentation:
                        vgain: float = 0.5,
                        noise_mean: float = 0,
                        noise_std: float = 150,
-                       max_angle_rotate: float = 10):
+                       max_angle_rotate: float = 10,
+                       shift_height_ratio=0.1,
+                       shift_width_ratio=0.1):
         
         self.list_img_files = [os.path.join(image_train_folder, file)
                                 for file in os.listdir(image_train_folder) 
@@ -76,6 +88,8 @@ class data_augmentation:
         self.noise_mean = noise_mean
         self.noise_std = noise_std
         self.max_angle_rotate = max_angle_rotate
+        self.shift_height_ratio = shift_height_ratio
+        self.shift_width_ratio = shift_width_ratio
 
     def run(self, num_images_gen: int,
                   save_folder: str, 
@@ -83,7 +97,8 @@ class data_augmentation:
                   p_noise: float = 0.5,
                   p_flip0: float = 0.5,
                   p_flip1: float = 0.5,
-                  p_rotate: float = 0.5):
+                  p_rotate: float = 0.5,
+                  p_shift = 0.5):
         if not os.path.exists(save_folder):
             os.mkdir(save_folder)
 
@@ -93,7 +108,8 @@ class data_augmentation:
             img = augment_flip_0(img, p=p_flip0)
             img = augment_flip_1(img, p=p_flip1)
             img = augment_hsv(img, hgain=self.hgain, sgain=self.sgain, vgain=self.vgain, p=p_hsv)
-            img = add_noise(img, mean=self.noise_mean, std=self.noise_std, p=p_noise)
             img = augment_rotate(img, max_angle=self.max_angle_rotate, p=p_rotate)
+            img = augment_shift(img, self.shift_height_ratio, self.shift_width_ratio, p=p_shift)
+            img = add_noise(img, mean=self.noise_mean, std=self.noise_std, p=p_noise)
             save_file = 'aug_' + str(i) + '_.jpg'
             cv2.imwrite(os.path.join(save_folder, save_file), img)
