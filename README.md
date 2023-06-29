@@ -5,6 +5,8 @@ Example results
 ![img_good](./assets/good.png)
 ![img_notgood](./assets/not_good.png)
 ## Install
+git clone https://github.com/TheNho/Circuit-Board-Anomaly-Detection.git
+cd Circuit-Board-Anomaly-Detection
 pip install -r requirements.txt
 ## Run
 python main.py
