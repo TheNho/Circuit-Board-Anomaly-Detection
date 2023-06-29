@@ -9,16 +9,15 @@ from torchvision import transforms as T
 from PIL import Image
 import os
 
-
-standard_image_transform = T.Compose([T.Resize(224),
-                                      T.CenterCrop(224),
+standard_image_transform = T.Compose([T.Resize(256),
+                                      T.CenterCrop(size=256),
                                       T.ToTensor(),
                                       T.Normalize(mean=[0.485, 0.456, 0.406],
                                                   std=[0.229, 0.224, 0.225])
                                       ])
 
-standard_mask_transform = T.Compose([T.Resize(224),
-                                     T.CenterCrop(224),
+standard_mask_transform = T.Compose([T.Resize(256),
+                                     T.CenterCrop(size=256),
                                      T.ToTensor()
                                      ])
 
@@ -40,15 +39,12 @@ def to_batch(images: List[np.ndarray], transforms: T.Compose, device: torch.devi
 
     return batch.to(device)
 
-
-# From: https://github.com/pytorch/pytorch/issues/19037
 def pytorch_cov(tensor: torch.Tensor, rowvar: bool = True, bias: bool = False) -> torch.Tensor:
     """Estimate a covariance matrix (np.cov)."""
     tensor = tensor if rowvar else tensor.transpose(-1, -2)
     tensor = tensor - tensor.mean(dim=-1, keepdim=True)
     factor = 1 / (tensor.shape[-1] - int(not bool(bias)))
     return factor * tensor @ tensor.transpose(-1, -2).conj()
-
 
 def mahalanobis(mean: torch.Tensor, cov_inv: torch.Tensor, batch: torch.Tensor) -> torch.Tensor:
     """Calculate the mahalonobis distance
@@ -88,6 +84,7 @@ def mahalanobis(mean: torch.Tensor, cov_inv: torch.Tensor, batch: torch.Tensor) 
     assert mean.shape[0] == cov_inv.shape[0]
     assert mean.shape[1] == cov_inv.shape[1] == cov_inv.shape[2] == batch.shape[1]
     assert batch.shape[0] % mean.shape[0] == 0
+    # check shape input
 
     # Set shape variables
     mini_batch_size, length = mean.shape
@@ -108,7 +105,6 @@ def mahalanobis(mean: torch.Tensor, cov_inv: torch.Tensor, batch: torch.Tensor) 
     cov_inv = cov_inv.float()
     batch = batch.float()
 
-    # Calculate mahalanobis distance
     diff = mean-batch
     mult1 = torch.bmm(diff.unsqueeze(1), cov_inv)
     mult2 = torch.bmm(mult1, diff.unsqueeze(2))
@@ -120,7 +116,6 @@ def mahalanobis(mean: torch.Tensor, cov_inv: torch.Tensor, batch: torch.Tensor) 
         mahalanobis_distance = mahalanobis_distance.reshape(ratio, mini_batch_size)
 
     return mahalanobis_distance
-
 
 def image_score(patch_scores: torch.Tensor) -> torch.Tensor:
     """Calculate image scores from patch scores.
@@ -136,7 +131,6 @@ def image_score(patch_scores: torch.Tensor) -> torch.Tensor:
     # Calculate max value of each matrix
     image_scores = torch.max(patch_scores.reshape(patch_scores.shape[0], -1), -1).values
     return image_scores
-
 
 def classification(image_scores: torch.Tensor, thresh: float) -> torch.Tensor:
     """Calculate image classifications from image scores.
@@ -157,7 +151,6 @@ def classification(image_scores: torch.Tensor, thresh: float) -> torch.Tensor:
     image_classifications[image_classifications >= thresh] = 0
     return image_classifications
 
- 
 def rename_files(
             source_path: str,
             destination_path: Optional[str] = None
@@ -182,7 +175,6 @@ def rename_files(
             new_destination = os.path.join(source_path, new_name)
 
         os.rename(file_source_path, new_destination)
-
 
 def split_tensor_and_run_function(
             func: Callable[[torch.Tensor], List],

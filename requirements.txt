@@ -1,7 +1,8 @@
 torch
 torchvision
 Pillow==9.5.0
-snap7
+python-snap7
+scipy
 numpy
 opencv-python
 scikit-image

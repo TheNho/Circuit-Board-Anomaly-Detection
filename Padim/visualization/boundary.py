@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 import torch
 from skimage.segmentation import find_boundaries
 from .utils import composite_image, to_numpy
@@ -73,7 +74,8 @@ def boundary_images(images: Union[np.ndarray, torch.Tensor],
 
 def boundary_image(image: Union[np.ndarray, torch.Tensor],
                    patch_classification: Union[np.ndarray, torch.Tensor],
-                   boundary_color: Tuple[int, int, int] = (255, 0, 0)
+                   boundary_color: Tuple[int, int, int] = (255, 0, 0),
+                   thickness=30,
                    ) -> np.ndarray:
     """
        Draw boundaries around masked areas on image.
@@ -88,13 +90,11 @@ def boundary_image(image: Union[np.ndarray, torch.Tensor],
 
     """
 
+    height, width, channel = image.shape
     image = to_numpy(image).copy()
     mask = to_numpy(patch_classification).copy()
 
-    found_boundaries = find_boundaries(mask).astype(np.uint8)
-    layer_two = np.zeros(image.shape, dtype=np.uint8)
-    layer_two[:] = boundary_color
-
-    b_image = composite_image(image, layer_two, found_boundaries)
-
-    return b_image
+    mask = cv2.resize(mask, (width, height)).astype(np.uint8)
+    contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    cv2.drawContours(image, contours, -1, boundary_color, thickness)
+    return image

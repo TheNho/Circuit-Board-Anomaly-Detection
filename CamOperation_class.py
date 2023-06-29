@@ -330,7 +330,15 @@ class CameraOperation:
             else:
                 print("no data, ret = " + To_hex_str(ret))
                 continue
+
             # Display
+            img = cv2.imread('dataset/ReLay Module/not good/lost of small components/001.jpg')
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            self.buf_save_image = img.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+            self.st_frame_info.nWidth = img.shape[1]
+            self.st_frame_info.nHeight = img.shape[0]
+            self.st_frame_info.nFrameLen = img.shape[0]*img.shape[1]*img.shape[2]
+
             stDisplayParam = MV_DISPLAY_FRAME_INFO()
             memset(byref(stDisplayParam), 0, sizeof(stDisplayParam))
             stDisplayParam.hWnd = int(winHandle)
@@ -340,31 +348,33 @@ class CameraOperation:
             stDisplayParam.pData = self.buf_save_image
             stDisplayParam.nDataLen = self.st_frame_info.nFrameLen
             self.obj_cam.MV_CC_DisplayOneFrame(stDisplayParam)
+
             
-            # convert to numpy and save in image_handle
-            # print(self.st_frame_info.enPixelType) #debug: check type of data
-            if Is_color_data(self.st_frame_info.enPixelType):
-                # print("Color numpy data") # Check type of image
-                img_buff = Color_numpy(self.buf_save_image, 
-                                       self.st_frame_info.nWidth, 
-                                       self.st_frame_info.nHeight,
-                                       self.st_frame_info.enPixelType)
-            elif Is_mono_data(self.st_frame_info.enPixelType):
-                # print("Mono numpy data")
-                img_buff = Mono_numpy(self.buf_save_image, self.st_frame_info.nWidth, self.st_frame_info.nHeight)
-            else:
-                print('Error pixel format')
-                continue
-            # print("image shape:", img_buff.shape) #debug: check shape of image
+            # # convert to numpy and save in image_handle
+            # # print(self.st_frame_info.enPixelType) #debug: check type of data
+            # if Is_color_data(self.st_frame_info.enPixelType):
+            #     # print("Color numpy data") # Check type of image
+            #     img_buff = Color_numpy(self.buf_save_image, 
+            #                            self.st_frame_info.nWidth, 
+            #                            self.st_frame_info.nHeight,
+            #                            self.st_frame_info.enPixelType)
+            # elif Is_mono_data(self.st_frame_info.enPixelType):
+            #     # print("Mono numpy data")
+            #     img_buff = Mono_numpy(self.buf_save_image, self.st_frame_info.nWidth, self.st_frame_info.nHeight)
+            # else:
+            #     print('Error pixel format')
+            #     continue
+            # # print("image shape:", img_buff.shape) #debug: check shape of image
+
+            # for debuge, delete later
+            img_buff = img
+            # for debuge, delete later
+            self.buf_save_image = None
+
             if img_buff is not None:
                 image_handle.set(img_buff)
             img_buff = None
 
-            # # Test and show with opencv
-            # numArray = cv2.cvtColor(numArray, cv2.COLOR_RGB2BGR)
-            # cv2.imshow("Test img", numArray)
-            # cv2.waitKey(1)
-            
             # exit
             if self.b_exit:
                 if img_buff is not None:

@@ -344,7 +344,7 @@
    <widget class="QLabel" name="result_text">
     <property name="geometry">
      <rect>
-      <x>490</x>
+      <x>500</x>
       <y>20</y>
       <width>161</width>
       <height>61</height>
@@ -366,7 +366,7 @@
     <property name="geometry">
      <rect>
       <x>350</x>
-      <y>20</y>
+      <y>10</y>
       <width>101</width>
       <height>51</height>
      </rect>
@@ -381,6 +381,38 @@
     </property>
     <property name="text">
      <string>RUN</string>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="radio_heatmap">
+    <property name="geometry">
+     <rect>
+      <x>320</x>
+      <y>70</y>
+      <width>95</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Heat map</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="radio_boundary">
+    <property name="geometry">
+     <rect>
+      <x>410</x>
+      <y>70</y>
+      <width>95</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Boundary</string>
+    </property>
+    <property name="checked">
+     <bool>false</bool>
     </property>
    </widget>
   </widget>
