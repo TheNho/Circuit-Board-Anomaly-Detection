@@ -17,6 +17,8 @@ from Padim.visualization import heatmap_image, boundary_image
 from PIL import Image
 from Padim.utils import standard_image_transform, classification
 import snap7
+import warnings
+warnings.filterwarnings("ignore")
 
 class Images_Handle:
     def __init__(self, img):
@@ -91,8 +93,8 @@ if __name__ == "__main__":
                 QMessageBox.warning(mainWindow, "Error", "Cannot write value to plc", QMessageBox.Ok)
         
         def commuicate_with_plc():
+            ui.result_text.setText('')
             while isGrabbing and is_padim_model_inited and plc_s7.get_connected():
-                ui.result_text.setText('')
                 get_value = readMemory(address, length)
                 if check_equal_value(get_value, 1):
                     t = time.time()
@@ -108,8 +110,7 @@ if __name__ == "__main__":
                     image = Image.fromarray(img)
 
                     transformed_images = standard_image_transform(image).unsqueeze(0) #1xCxHxW
-                    # print('transformed image shape', transformed_images.shape)
-
+                    
                     # get model output
                     image_scores, score_maps = padim_model.predict(transformed_images)
                     print("Model predict in", round(time.time()-t, 4), "s")
@@ -139,7 +140,8 @@ if __name__ == "__main__":
                         send_value = 3.0
                     ui.result_text.setText(text)
                     writeMemory(address, length, send_value)
-                time.sleep(0.1)
+                elif check_equal_value(get_value, 0):
+                    ui.result_text.setText('')
         
         if not isGrabbing:
             QMessageBox.warning(mainWindow, "Error", "Start Grabbing first!", QMessageBox.Ok)
@@ -150,6 +152,7 @@ if __name__ == "__main__":
         if not is_padim_model_inited:
             QMessageBox.warning(mainWindow, "Error", "Padim model is not initialized", QMessageBox.Ok)
             return
+
         # run main function
         plc_thread_handle = threading.Thread(target=commuicate_with_plc)
         plc_thread_handle.start()
@@ -285,6 +288,9 @@ if __name__ == "__main__":
             QMessageBox.warning(mainWindow, "Error", strError, QMessageBox.Ok)
             isOpen = False
         else:
+            ui.radio_continuous.setChecked(True)
+            ui.radio_trigger_mode.setChecked(False)
+            ui.cbox_trigger_software.setChecked(False)
             set_continue_mode()
             get_param()
             isOpen = True
@@ -333,17 +339,18 @@ if __name__ == "__main__":
         if ret != 0:
             strError = "Set continue mode failed ret:" + ToHexStr(ret) + " mode is error" #+ str(is_trigger_mode)
             QMessageBox.warning(mainWindow, "Error", strError, QMessageBox.Ok)
+        else:
+            ui.cbox_trigger_software.setChecked(False)
+            enable_controls()
     # en:set software trigger mode
     def set_software_trigger_mode():
-
         ret = obj_cam_operation.Set_trigger_mode(True)
         if ret != 0:
             strError = "Set trigger mode failed ret:" + ToHexStr(ret)
             QMessageBox.warning(mainWindow, "Error", strError, QMessageBox.Ok)
         else:
-            ui.radioContinueMode.setChecked(False)
-            ui.radioTriggerMode.setChecked(True)
-            ui.bnSoftwareTrigger.setEnabled(isGrabbing)
+            enable_controls()
+
     # en:set trigger software
     def trigger_once():
         ret = obj_cam_operation.Trigger_once()
@@ -408,6 +415,9 @@ if __name__ == "__main__":
         ui.bnSaveImageBMP.setEnabled(isOpen and isGrabbing)
         ui.bnSaveImageJPG.setEnabled(isOpen and isGrabbing)
 
+        ui.cbox_trigger_software.setEnabled(isGrabbing and ui.radio_trigger_mode.isChecked())
+        ui.btnTriggerOnce.setEnabled(ui.radio_trigger_mode.isChecked() and ui.cbox_trigger_software.isChecked())
+
     # en: Init app, bind ui and api
     app = QApplication(sys.argv)
     mainWindow = QMainWindow()
@@ -425,6 +435,10 @@ if __name__ == "__main__":
     ui.btn_load_padim.clicked.connect(init_padim_model)
     ui.btn_connect_plc.clicked.connect(init_plc)
     ui.btn_run.clicked.connect(run)
+    ui.cbox_trigger_software.clicked.connect(enable_controls)
+    ui.btnTriggerOnce.clicked.connect(trigger_once)
+    ui.radio_trigger_mode.clicked.connect(set_software_trigger_mode)
+    ui.radio_continuous.clicked.connect(set_continue_mode)
     mainWindow.show()
 
     app.exec_()

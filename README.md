@@ -8,5 +8,5 @@ Example results
 pip install -r requirements.txt
 ## Run
 python main.py
-# Code References
+## Code References
 Padim model: https://github.com/OpenAOI/anodet

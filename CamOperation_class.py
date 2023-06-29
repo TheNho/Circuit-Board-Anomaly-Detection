@@ -187,7 +187,6 @@ class CameraOperation:
 
     def Stop_grabbing(self):
         if self.b_start_grabbing and self.b_open_device:
-
             if self.b_thread_closed:
                 Stop_thread(self.h_thread_handle)
                 self.b_thread_closed = False
@@ -210,20 +209,17 @@ class CameraOperation:
             ret = self.obj_cam.MV_CC_CloseDevice()
             if ret != 0:
                 return ret
-
         # Destroy handle
         self.obj_cam.MV_CC_DestroyHandle()
         self.b_open_device = False
         self.b_start_grabbing = False
         self.b_exit = True
         print("close device successfully!")
-
         return MV_OK
 
     def Set_trigger_mode(self, is_trigger_mode):
         if not self.b_open_device:
             return MV_E_CALLORDER
-
         if not is_trigger_mode:
             ret = self.obj_cam.MV_CC_SetEnumValue("TriggerMode", 0)
             if ret != 0:
@@ -235,7 +231,6 @@ class CameraOperation:
             ret = self.obj_cam.MV_CC_SetEnumValue("TriggerSource", 7)
             if ret != 0:
                 return ret
-
         return MV_OK
 
     def Trigger_once(self):
@@ -254,17 +249,14 @@ class CameraOperation:
             if ret != 0:
                 return ret
             self.frame_rate = stFloatParam_FrameRate.fCurValue
-
             ret = self.obj_cam.MV_CC_GetFloatValue("ExposureTime", stFloatParam_exposureTime)
             if ret != 0:
                 return ret
             self.exposure_time = stFloatParam_exposureTime.fCurValue
-
             ret = self.obj_cam.MV_CC_GetFloatValue("Gain", stFloatParam_gain)
             if ret != 0:
                 return ret
             self.gain = stFloatParam_gain.fCurValue
-
             return MV_OK
 
     def Set_parameter(self, frameRate, exposureTime, gain):
@@ -278,19 +270,15 @@ class CameraOperation:
             if ret != 0:
                 print('show error', 'set exposure time fail! ret = ' + To_hex_str(ret))
                 return ret
-
             ret = self.obj_cam.MV_CC_SetFloatValue("Gain", float(gain))
             if ret != 0:
                 print('show error', 'set gain fail! ret = ' + To_hex_str(ret))
                 return ret
-
             ret = self.obj_cam.MV_CC_SetFloatValue("AcquisitionFrameRate", float(frameRate))
             if ret != 0:
                 print('show error', 'set acquistion frame rate fail! ret = ' + To_hex_str(ret))
                 return ret
-
             print('show info', 'set parameter success!')
-
             return MV_OK
 
     # thread loop
@@ -298,7 +286,6 @@ class CameraOperation:
         # stOutFrame = MV_FRAME_OUT()
         stFrameInfo = MV_FRAME_OUT_INFO_EX()
         img_buff = None
-        # numArray = None
 
         stPayloadSize = MVCC_INTVALUE_EX()
         ret_temp = self.obj_cam.MV_CC_GetIntValueEx("PayloadSize", stPayloadSize)
@@ -312,7 +299,6 @@ class CameraOperation:
 
             ret = self.obj_cam.MV_CC_GetOneFrameTimeout(self.buf_grab_image, self.buf_grab_image_size, stFrameInfo)
 
-            # ret = self.obj_cam.MV_CC_GetImageBuffer(stOutFrame, 1000)
             if 0 == ret: #get Frame success
                 # init buffer
                 if self.buf_save_image is None:
@@ -322,23 +308,12 @@ class CameraOperation:
                 self.buf_lock.acquire()
                 cdll.msvcrt.memcpy(byref(self.buf_save_image), self.buf_grab_image, self.st_frame_info.nFrameLen)
                 self.buf_lock.release()
-                # print("get one frame: Width[%d], Height[%d], nFrameNum[%d]"
-                #       % (self.st_frame_info.nWidth, self.st_frame_info.nHeight, self.st_frame_info.nFrameNum))
-                # print("Type of buffer", self.buf_save_image) # check type
                 # Free buffer
                 # self.obj_cam.MV_CC_FreeImageBuffer(stOutFrame)
             else:
                 print("no data, ret = " + To_hex_str(ret))
                 continue
-
             # Display
-            img = cv2.imread('dataset/ReLay Module/not good/lost of small components/001.jpg')
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            self.buf_save_image = img.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
-            self.st_frame_info.nWidth = img.shape[1]
-            self.st_frame_info.nHeight = img.shape[0]
-            self.st_frame_info.nFrameLen = img.shape[0]*img.shape[1]*img.shape[2]
-
             stDisplayParam = MV_DISPLAY_FRAME_INFO()
             memset(byref(stDisplayParam), 0, sizeof(stDisplayParam))
             stDisplayParam.hWnd = int(winHandle)
@@ -349,28 +324,19 @@ class CameraOperation:
             stDisplayParam.nDataLen = self.st_frame_info.nFrameLen
             self.obj_cam.MV_CC_DisplayOneFrame(stDisplayParam)
 
-            
-            # # convert to numpy and save in image_handle
-            # # print(self.st_frame_info.enPixelType) #debug: check type of data
-            # if Is_color_data(self.st_frame_info.enPixelType):
-            #     # print("Color numpy data") # Check type of image
-            #     img_buff = Color_numpy(self.buf_save_image, 
-            #                            self.st_frame_info.nWidth, 
-            #                            self.st_frame_info.nHeight,
-            #                            self.st_frame_info.enPixelType)
-            # elif Is_mono_data(self.st_frame_info.enPixelType):
-            #     # print("Mono numpy data")
-            #     img_buff = Mono_numpy(self.buf_save_image, self.st_frame_info.nWidth, self.st_frame_info.nHeight)
-            # else:
-            #     print('Error pixel format')
-            #     continue
-            # # print("image shape:", img_buff.shape) #debug: check shape of image
+            # convert to numpy and save in image_handle
+            if Is_color_data(self.st_frame_info.enPixelType):
+                img_buff = Color_numpy(self.buf_save_image, 
+                                       self.st_frame_info.nWidth, 
+                                       self.st_frame_info.nHeight,
+                                       self.st_frame_info.enPixelType)
+            elif Is_mono_data(self.st_frame_info.enPixelType):
+                img_buff = Mono_numpy(self.buf_save_image, self.st_frame_info.nWidth, self.st_frame_info.nHeight)
+            else:
+                print('Error pixel format!')
+                continue
 
-            # for debuge, delete later
-            img_buff = img
-            # for debuge, delete later
-            self.buf_save_image = None
-
+            # Assign to image handle
             if img_buff is not None:
                 image_handle.set(img_buff)
             img_buff = None
@@ -391,12 +357,12 @@ class CameraOperation:
         file_path = str(self.st_frame_info.nFrameNum) + ".jpg"
         c_file_path = file_path.encode('ascii')
         stSaveParam = MV_SAVE_IMAGE_TO_FILE_PARAM_EX()
-        stSaveParam.enPixelType = self.st_frame_info.enPixelType  # ch:相机对应的像素格式 | en:Camera pixel type
-        stSaveParam.nWidth = self.st_frame_info.nWidth  # ch:相机对应的宽 | en:Width
-        stSaveParam.nHeight = self.st_frame_info.nHeight  # ch:相机对应的高 | en:Height
+        stSaveParam.enPixelType = self.st_frame_info.enPixelType  # en:Camera pixel type
+        stSaveParam.nWidth = self.st_frame_info.nWidth  # en:Width
+        stSaveParam.nHeight = self.st_frame_info.nHeight  # en:Height
         stSaveParam.nDataLen = self.st_frame_info.nFrameLen
         stSaveParam.pData = cast(self.buf_save_image, POINTER(c_ubyte))
-        stSaveParam.enImageType = MV_Image_Jpeg  # ch:需要保存的图像类型 | en:Image format to save
+        stSaveParam.enImageType = MV_Image_Jpeg  # en:Image format to save
         stSaveParam.nQuality = 80
         stSaveParam.pcImagePath = ctypes.create_string_buffer(c_file_path)
         stSaveParam.iMethodValue = 2
@@ -412,12 +378,12 @@ class CameraOperation:
         file_path = str(self.st_frame_info.nFrameNum) + ".bmp"
         c_file_path = file_path.encode('ascii')
         stSaveParam = MV_SAVE_IMAGE_TO_FILE_PARAM_EX()
-        stSaveParam.enPixelType = self.st_frame_info.enPixelType  # ch:相机对应的像素格式 | en:Camera pixel type
-        stSaveParam.nWidth = self.st_frame_info.nWidth  # ch:相机对应的宽 | en:Width
-        stSaveParam.nHeight = self.st_frame_info.nHeight  # ch:相机对应的高 | en:Height
+        stSaveParam.enPixelType = self.st_frame_info.enPixelType  # en:Camera pixel type
+        stSaveParam.nWidth = self.st_frame_info.nWidth  # en:Width
+        stSaveParam.nHeight = self.st_frame_info.nHeight  # en:Height
         stSaveParam.nDataLen = self.st_frame_info.nFrameLen
         stSaveParam.pData = cast(self.buf_save_image, POINTER(c_ubyte))
-        stSaveParam.enImageType = MV_Image_Bmp  # ch:需要保存的图像类型 | en:Image format to save
+        stSaveParam.enImageType = MV_Image_Bmp  # en:Image format to save
         stSaveParam.nQuality = 8
         stSaveParam.pcImagePath = ctypes.create_string_buffer(c_file_path)
         stSaveParam.iMethodValue = 2
