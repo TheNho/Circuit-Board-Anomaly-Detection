@@ -164,6 +164,14 @@ if __name__ == "__main__":
     def init_padim_model():
         global padim_model
         global is_padim_model_inited
+
+        # Check folder saved_model
+        if not os.path.isdir(MODEL_DATA_PATH):
+            os.makedirs(MODEL_DATA_PATH)
+            QMessageBox.warning(mainWindow, "Error", "Folder saved_model is not existed!\nCreate folder?", QMessageBox.Ok)
+            is_padim_model_inited = False
+            return
+    
         # Check threshold value
         try:
             THRESH = float(ui.Threshold.text())
